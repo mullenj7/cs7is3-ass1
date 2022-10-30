@@ -51,16 +51,20 @@ public class CreateIndex {
 
   public static void main(String[] args) throws IOException, ParseException {
     ArrayList<ArrayList> lines = organiseData("./cran/cran.all.1400");
+    String analyzerName = "";
 
-    // Analyzer analyzer = new SimpleAnalyzer();
-    Analyzer analyzer = new EnglishAnalyzer();
+    Analyzer analyzer = new SimpleAnalyzer();
+    analyzerName = "simple";
+
+    // Analyzer analyzer = new EnglishAnalyzer();
+    // analyzerName = "english";
 
     //createIndex(lines, analyzer);
-    runQuery(analyzer);
+    runQuery(analyzer, analyzerName);
 
   }
 
-  public static void runQuery(Analyzer analyzer) throws IOException, ParseException { 
+  public static void runQuery(Analyzer analyzer, String analyzerName) throws IOException, ParseException { 
     try {
 
       Directory directory = FSDirectory.open(Paths.get(INDEX_DIRECTORY));
@@ -70,16 +74,17 @@ public class CreateIndex {
       // setting scoring method
       String scoringMethod = "BM25";
       isearcher.setSimilarity(new BM25Similarity());
-      //String scoringMethod = "Classic";
-      //isearcher.setSimilarity(new ClassicSimilarity());
+      // String scoringMethod = "Classic";
+      // isearcher.setSimilarity(new ClassicSimilarity());
 
       
+      String fileName = "./results/"+analyzerName+"_"+scoringMethod+"query_results.txt";
 
       MultiFieldQueryParser queryParser = new MultiFieldQueryParser(new String[] { "title", "author", "text" },
           analyzer);
       queryParser.setAllowLeadingWildcard(true); // prevents error with '?' in text
 
-      PrintWriter iwriter = new PrintWriter("./results/query_results.txt", "UTF-8");
+      PrintWriter iwriter = new PrintWriter(fileName, "UTF-8");
 
 
       ArrayList<ArrayList> lines = organiseData("./cran/cran.qry");
@@ -120,10 +125,10 @@ public class CreateIndex {
       Document doc = new Document();
 
       ArrayList<String> item = lines.get(i);
-      doc.add(new TextField("id", String.valueOf(i + 1), Field.Store.YES));
-      doc.add(new StringField("title", item.get(0), Field.Store.YES));
-      doc.add(new StringField("author", item.get(1), Field.Store.YES));
-      doc.add(new StringField("text", item.get(3), Field.Store.YES));
+      doc.add(new StringField("id", String.valueOf(i + 1), Field.Store.YES));
+      doc.add(new TextField("title", item.get(0), Field.Store.YES));
+      doc.add(new TextField("author", item.get(1), Field.Store.YES));
+      doc.add(new TextField("text", item.get(3), Field.Store.YES));
       iwriter.addDocument(doc);
     }
 
