@@ -71,7 +71,7 @@ public class CreateIndex {
       DirectoryReader ireader = DirectoryReader.open(directory);
       IndexSearcher isearcher = new IndexSearcher(ireader);
       String[] scores = new String[] { "BM25", "Classic", "Boolean" };
-
+      String scoringMethod = scores[0];
       isearcher.setSimilarity(new BM25Similarity());
 
       MultiFieldQueryParser queryParser = new MultiFieldQueryParser(new String[] { "title", "author", "text" },
@@ -93,6 +93,10 @@ public class CreateIndex {
           TopDocs docs = isearcher.search(query, MAX_RESULTS);
           ScoreDoc[] hits = docs.scoreDocs;
           System.out.println("length is " + hits.length);
+          for (int z = 0; z < hits.length; z++) {  // queryId / Q0(ignored) / docId / rank(ignored) / score / standard
+            Document doc = isearcher.doc(hits[z].doc);
+            iwriter.println((i + 1) + " 0 " + doc.get("id") + " " + z + " " + hits[z].score + " " + scoringMethod);
+          }
         }
       }
     } catch (IOException e) {
