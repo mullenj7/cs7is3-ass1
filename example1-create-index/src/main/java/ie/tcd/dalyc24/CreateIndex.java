@@ -43,40 +43,41 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.TopDocs;
 import java.io.PrintWriter;
 
-
-import java.util.HashMap;
-
-// import org.apache.lucene.store.RAMDirectory;
-
 public class CreateIndex {
 
   // Directory where the search index will be saved
   private static String INDEX_DIRECTORY = "../newIndex";
-  private static int MAX_RESULTS = 50;
+  private static int MAX_RESULTS = 50; // want top 50 results
 
   public static void main(String[] args) throws IOException, ParseException {
     ArrayList<ArrayList> lines = organiseData("./cran/cran.all.1400");
-    // Analyzer analyzer = new StandardAnalyzer();
-    // Analyzer analyzer = new WhitespaceAnalyzer();
+
+    // Analyzer analyzer = new SimpleAnalyzer();
     Analyzer analyzer = new EnglishAnalyzer();
+
     //createIndex(lines, analyzer);
     runQuery(analyzer);
 
   }
 
-  public static void runQuery(Analyzer analyzer) throws IOException, ParseException {
+  public static void runQuery(Analyzer analyzer) throws IOException, ParseException { 
     try {
 
       Directory directory = FSDirectory.open(Paths.get(INDEX_DIRECTORY));
       DirectoryReader ireader = DirectoryReader.open(directory);
       IndexSearcher isearcher = new IndexSearcher(ireader);
-      String[] scores = new String[] { "BM25", "Classic", "Boolean" };
-      String scoringMethod = scores[0];
+
+      // setting scoring method
+      String scoringMethod = "BM25";
       isearcher.setSimilarity(new BM25Similarity());
+      //String scoringMethod = "Classic";
+      //isearcher.setSimilarity(new ClassicSimilarity());
+
+      
 
       MultiFieldQueryParser queryParser = new MultiFieldQueryParser(new String[] { "title", "author", "text" },
           analyzer);
-      queryParser.setAllowLeadingWildcard(true);
+      queryParser.setAllowLeadingWildcard(true); // prevents error with '?' in text
 
       PrintWriter iwriter = new PrintWriter("./results/query_results.txt", "UTF-8");
 
@@ -85,7 +86,7 @@ public class CreateIndex {
       for (int i = 0; i < lines.size(); i++) {
         ArrayList<String> term = lines.get(i);
 
-        for (int j = 0; j < term.size(); j++) {
+        for (int j = 0; j < term.size(); j++) { // for each query run query and store results in text file
           String queryString = (term.get(j));
           Query query = queryParser.parse(queryString);
           TopDocs docs = isearcher.search(query, MAX_RESULTS);
@@ -108,27 +109,7 @@ public class CreateIndex {
 
   }
 
-  public static ArrayList<String> applyAnalyzer(String term, Analyzer analyzer) throws IOException {
-    ArrayList<String> returner = new ArrayList<String>();
-
-    TokenStream stream = analyzer.tokenStream("content", term);
-    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-
-    try {
-      stream.reset();
-
-      while (stream.incrementToken()) {
-        returner.add(termAtt.toString());
-      }
-
-      stream.end();
-    } finally {
-      stream.close();
-    }
-    return returner;
-  }
-
-  public static void createIndex(ArrayList<ArrayList> lines, Analyzer analyzer) throws IOException {
+  public static void createIndex(ArrayList<ArrayList> lines, Analyzer analyzer) throws IOException { // creates index
     Directory directory = FSDirectory.open(Paths.get(INDEX_DIRECTORY));
     IndexWriterConfig config = new IndexWriterConfig(analyzer);
 
@@ -139,10 +120,10 @@ public class CreateIndex {
       Document doc = new Document();
 
       ArrayList<String> item = lines.get(i);
-      doc.add(new StringField("id", String.valueOf(i + 1), Field.Store.YES));
-      doc.add(new TextField("title", item.get(0), Field.Store.YES));
-      doc.add(new TextField("author", item.get(1), Field.Store.YES));
-      doc.add(new TextField("text", item.get(3), Field.Store.YES));
+      doc.add(new TextField("id", String.valueOf(i + 1), Field.Store.YES));
+      doc.add(new StringField("title", item.get(0), Field.Store.YES));
+      doc.add(new StringField("author", item.get(1), Field.Store.YES));
+      doc.add(new StringField("text", item.get(3), Field.Store.YES));
       iwriter.addDocument(doc);
     }
 
@@ -152,10 +133,10 @@ public class CreateIndex {
   }
 
   public static String removePre(String value) {
-    return (value.substring(2).trim()); // remove trailing spaces
+    return (value.substring(2).trim()); // remove trailing spaces and precursor e.g .I or .W
   }
 
-  public static ArrayList<ArrayList> organiseData(String filename) {
+  public static ArrayList<ArrayList> organiseData(String filename) { // prepares data for indexing/searching
     BufferedReader reader;
     ArrayList<ArrayList> lines = new ArrayList<ArrayList>();
     ArrayList<String> nextArray = new ArrayList<String>();
@@ -183,7 +164,7 @@ public class CreateIndex {
         }
         line = reader.readLine();
       }
-      nextArray.add(removePre(concatLine));
+      nextArray.add(removePre(concatLine)); // flush values
       lines.add(nextArray);
 
       reader.close();
