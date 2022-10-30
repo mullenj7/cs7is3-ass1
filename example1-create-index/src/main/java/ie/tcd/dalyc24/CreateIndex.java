@@ -59,7 +59,7 @@ public class CreateIndex {
     // Analyzer analyzer = new StandardAnalyzer();
     // Analyzer analyzer = new WhitespaceAnalyzer();
     Analyzer analyzer = new EnglishAnalyzer();
-    // createIndex(lines, analyzer);
+    //createIndex(lines, analyzer);
     runQuery(analyzer);
 
   }
@@ -87,18 +87,19 @@ public class CreateIndex {
 
         for (int j = 0; j < term.size(); j++) {
           String queryString = (term.get(j));
-          System.out.println("term is " + queryString);
-
           Query query = queryParser.parse(queryString);
           TopDocs docs = isearcher.search(query, MAX_RESULTS);
           ScoreDoc[] hits = docs.scoreDocs;
-          System.out.println("length is " + hits.length);
+          //System.out.println("length is " + hits.length);
           for (int z = 0; z < hits.length; z++) {  // queryId / Q0(ignored) / docId / rank(ignored) / score / standard
             Document doc = isearcher.doc(hits[z].doc);
             iwriter.println((i + 1) + " 0 " + doc.get("id") + " " + z + " " + hits[z].score + " " + scoringMethod);
           }
         }
       }
+
+      iwriter.flush();
+      iwriter.close();
     } catch (IOException e) {
       System.out.println("Error " + e);
     } catch (ParseException e) {
